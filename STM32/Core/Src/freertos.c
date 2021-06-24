@@ -27,6 +27,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "usart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,7 +47,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+uint8_t TransmitBuffer[10] = {11, 22, 33, 44, 55, 66, 77, 88, 99, 34};
+uint8_t ReceiveBuffer[10] = {};
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -88,7 +90,6 @@ void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
   */
 void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -175,16 +176,26 @@ void UartLog(void *argument)
 {
   /* USER CODE BEGIN UartLog */
   /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 10);
+	for(;;)
+	{
+		HAL_UART_Transmit_DMA(&huart1, TransmitBuffer, 10);
+		osDelay(1000);
+	}
   /* USER CODE END UartLog */
 }
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+	for(uint8_t i = 0; i < 10; ++i){
+		TransmitBuffer[i]++;
+	};
+}
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 10);
+}
 /* USER CODE END Application */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
