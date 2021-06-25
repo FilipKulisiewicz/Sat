@@ -60,9 +60,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define BUILD_IN_LED_Pin GPIO_PIN_13
 #define BUILD_IN_LED_GPIO_Port GPIOC
-#define SEND_DATA_Pin GPIO_PIN_0
-#define SEND_DATA_GPIO_Port GPIOA
-#define SEND_DATA_EXTI_IRQn EXTI0_IRQn
 #define RANDOM_DATA_Pin GPIO_PIN_1
 #define RANDOM_DATA_GPIO_Port GPIOA
 #define LOG_UART1_RX_Pin GPIO_PIN_9

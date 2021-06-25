@@ -1,21 +1,4 @@
 /* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * File Name          : freertos.c
-  * Description        : Code for freertos applications
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2021 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                             www.st.com/SLA0044
-  *
-  ******************************************************************************
-  */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -26,37 +9,37 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
-#include "logger.h"
 #include "stdio.h"
 #include "string.h"
 #include "adc.h"
 #include "dma.h"
 #include "usart.h"
 #include "gpio.h"
+#include <cstdio>
+
+#include <logger.hh>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-uint8_t TransmitBuffer[50] = {};
+uint8_t TransmitBuffer[50] = {}; //virtualMaster
+
 uint8_t ReceiveBuffer[50] = {};
-uint8_t data[60] = {};
-uint32_t line = 0;
+Logger Log(&huart1);
+
+
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -79,15 +62,22 @@ const osThreadAttr_t Logger_attributes = {
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for virtualMaster */
+osThreadId_t virtualMasterHandle;
+const osThreadAttr_t virtualMaster_attributes = {
+  .name = "virtualMaster",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
 void BlinkLed(void *argument);
 void UartLog(void *argument);
+void MasterCom(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -101,19 +91,15 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END Init */
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -126,72 +112,69 @@ void MX_FREERTOS_Init(void) {
   /* creation of Logger */
   LoggerHandle = osThreadNew(UartLog, NULL, &Logger_attributes);
 
+  /* creation of virtualMaster */
+  virtualMasterHandle = osThreadNew(MasterCom, NULL, &virtualMaster_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
 }
 
 /* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
   /* USER CODE END StartDefaultTask */
 }
 
 /* USER CODE BEGIN Header_BlinkLed */
-/**
-* @brief Function implementing the Blink thread.
-* @param argument: Not used
-* @retval None
-*/
 /* USER CODE END Header_BlinkLed */
 void BlinkLed(void *argument)
 {
-  /* USER CODE BEGIN BlinkLed */
-  /* Infinite loop */
-  for(;;)
-  {
+	/* USER CODE BEGIN BlinkLed */
 	 HAL_GPIO_TogglePin(BUILD_IN_LED_GPIO_Port, BUILD_IN_LED_Pin);
 	 osDelay(1000);
-  }
-  /* USER CODE END BlinkLed */
+
+	/* USER CODE END BlinkLed */
 }
 
 /* USER CODE BEGIN Header_UartLog */
-/**
-* @brief Function implementing the Logger thread.
-* @param argument: Not used
-* @retval None
-*/
 /* USER CODE END Header_UartLog */
 void UartLog(void *argument)
 {
-  /* USER CODE BEGIN UartLog */
-	/* Infinite loop */
+	/* USER CODE BEGIN UartLog */
 
-	HAL_ADC_Start(&hadc1);
 	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 50);
-	for(;;)
-	{
+
+
+	/* USER CODE END UartLog */
+}
+
+/* USER CODE BEGIN Header_MasterCom */
+/* USER CODE END Header_MasterCom */
+void MasterCom(void *argument)
+{
+  /* USER CODE BEGIN MasterCom */
+	HAL_ADC_Start(&hadc1);
+	for(;;){
+		if((HAL_ADC_GetValue(&hadc1) % 90) == 0)
+			while((HAL_ADC_GetValue(&hadc1) % 3) != 0){
+				HAL_UART_Transmit_DMA(&huart1, (uint8_t*)"LGDT", 50);
+				osDelay(100);
+			}
+		else{
+			std::sprintf((char*)TransmitBuffer, "LL:%lu", (HAL_ADC_GetValue(&hadc1) % 1000));
+			HAL_UART_Transmit_DMA(&huart1, TransmitBuffer, 50);
+		}
 		osDelay(1000);
 	}
-  /* USER CODE END UartLog */
+
+
+  /* USER CODE END MasterCom */
 }
 
 /* Private application code --------------------------------------------------*/
@@ -201,16 +184,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	sprintf(data, "LOG:%li:%s", line, ReceiveBuffer);
-	HAL_UART_Transmit(&huart2, data, 60, 1000);
+	if(Log.TakeCommand(ReceiveBuffer) == "0")
+		HAL_UART_Transmit_DMA(&huart1, ReceiveBuffer, 50);
 	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 50);
-}
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
-	if(GPIO_PIN == SEND_DATA_Pin){
-		sprintf(TransmitBuffer, "%lu", (HAL_ADC_GetValue(&hadc1) % 1000));
-		HAL_UART_Transmit_DMA(&huart1, TransmitBuffer, 50);
-	}
 }
 /* USER CODE END Application */
 
