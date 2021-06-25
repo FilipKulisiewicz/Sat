@@ -27,7 +27,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include "logger.h"
+#include "stdio.h"
+#include "string.h"
+#include "adc.h"
+#include "dma.h"
 #include "usart.h"
+#include "gpio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,8 +53,10 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-uint8_t TransmitBuffer[10] = {11, 22, 33, 44, 55, 66, 77, 88, 99, 34};
-uint8_t ReceiveBuffer[10] = {};
+uint8_t TransmitBuffer[50] = {};
+uint8_t ReceiveBuffer[50] = {};
+uint8_t data[60] = {};
+uint32_t line = 0;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -175,11 +183,12 @@ void BlinkLed(void *argument)
 void UartLog(void *argument)
 {
   /* USER CODE BEGIN UartLog */
-  /* Infinite loop */
-	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 10);
+	/* Infinite loop */
+
+	HAL_ADC_Start(&hadc1);
+	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 50);
 	for(;;)
 	{
-		HAL_UART_Transmit_DMA(&huart1, TransmitBuffer, 10);
 		osDelay(1000);
 	}
   /* USER CODE END UartLog */
@@ -188,13 +197,20 @@ void UartLog(void *argument)
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-	for(uint8_t i = 0; i < 10; ++i){
-		TransmitBuffer[i]++;
-	};
+	;
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 10);
+	sprintf(data, "LOG:%li:%s", line, ReceiveBuffer);
+	HAL_UART_Transmit(&huart2, data, 60, 1000);
+	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 50);
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_PIN){
+	if(GPIO_PIN == SEND_DATA_Pin){
+		sprintf(TransmitBuffer, "%lu", (HAL_ADC_GetValue(&hadc1) % 1000));
+		HAL_UART_Transmit_DMA(&huart1, TransmitBuffer, 50);
+	}
 }
 /* USER CODE END Application */
 
