@@ -172,8 +172,6 @@ void MasterCom(void *argument)
 		}
 		osDelay(1000);
 	}
-
-
   /* USER CODE END MasterCom */
 }
 
@@ -184,8 +182,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
-	if(Log.TakeCommand(ReceiveBuffer) == "0")
-		HAL_UART_Transmit_DMA(&huart1, ReceiveBuffer, 50);
+	Log.CommandManager(ReceiveBuffer);
 	HAL_UART_Receive_DMA(&huart1, ReceiveBuffer, 50);
 }
 /* USER CODE END Application */
