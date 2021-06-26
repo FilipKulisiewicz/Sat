@@ -11,17 +11,18 @@
 class Logger{
 	UART_HandleTypeDef* huartLog;
 	bool confirmation = 1;
-	const std::size_t expectedMinimumLogsDiffrence = 5;
+	uint8_t packetSize = 20;
+	const uint8_t expectedMinimumLogsDiffrence = 5;
 
-	char* dataToSave;
-	std::size_t newlySendedData, previouslySendedData, fullySendedData;
-	std::vector<std::string> SDData;
+	char dataToSave[20];
+	std::size_t newlySendedData = 0, previouslySendedData = 0, fullySendedData = 0;
+	std::vector<char*> SDData;
 public:
 	Logger(UART_HandleTypeDef* _huart): huartLog(_huart) {}
 	void CommandManager(uint8_t*);
 	void DataManager();
-	void Save(std::string);
-	void Send(std::string);
+	void Save(uint8_t*);
+	void Send(char*);
 };
 
 #endif /* INC_LOGGER_HH_ */
