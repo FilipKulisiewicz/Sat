@@ -35,7 +35,7 @@ void Logger::DataManager(){
 
 void Logger::Save(uint8_t* inputToSave){
 	char* tmp = new char[20];
-	std::sprintf(tmp, "%u%s", SDData.size(), inputToSave);
+	std::sprintf(tmp, "LD%u:%s", SDData.size(), &inputToSave[2]);
 	SDData.push_back(tmp); //there should be SDSave()
 	if(SDData.size() > 125)
 		SDData.resize(100);
